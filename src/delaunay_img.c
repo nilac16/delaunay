@@ -1,14 +1,19 @@
+/**
+ *  Quickly dumps the triangle pool to either a triangulation jpeg or a 
+ *  Voronoi diagram. Uses the STB image library to write image files. This 
+ *  file's only use is to make sure that the output is correct
+**/
 #include <stdio.h>
 #include <stdlib.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <stb/stb_image_write.h>
+#include "include/stb_image_write.h"
 #include "include/geometry.h"
 #include "include/delaunay.h"
 
 #ifdef __GNUC__
-#define EXPECT(x, y) __builtin_expect(x, y)
+#define gnu_attribute(...) __attribute__((__VA_ARGS__))
 #else
-#define EXPECT(x, y) x
+#define gnu_attribute(...)
 #endif
 
 
@@ -27,6 +32,7 @@ enum {
 
 #define LINEWIDTH 0.02
 
+gnu_attribute(nonnull)
 /// Bounds has the following form:
 /// ibegin, iend, istride
 /// start iteration at ibegin to iend every level, increment by the x res 
@@ -67,6 +73,7 @@ static void find_bounding_box(const double *restrict v1, const double *restrict 
     }
 }
 
+gnu_attribute(nonnull)
 static void get_pos_vector(double r[static restrict 2], const double src[static restrict 2],
                            int i, int j, const struct image_info *info)
 {
@@ -76,6 +83,7 @@ static void get_pos_vector(double r[static restrict 2], const double src[static 
     relative_twovec(src, scratch, r);
 }
 
+gnu_attribute(nonnull)
 static void draw_edge(float *raw, const double *restrict v1,
                       const double *restrict v2,
                       const struct image_info *info)
@@ -110,21 +118,24 @@ static void draw_edge(float *raw, const double *restrict v1,
     }
 }
 
-static void maximum_float(const float *raw, const struct image_info *info, float *max)
+gnu_attribute(nonnull, pure)
+static float maximum_float(const float *raw, const struct image_info *info)
 {
-    *max = raw[0];
+    float max = raw[0];
     for (int j = 0; j < info->res[DIM_Y]; j++) {
         for (int i = 0; i < info->res[DIM_X]; i++) {
-            if (raw[i] > *max) {
-                *max = raw[i];
+            if (raw[i] > max) {
+                max = raw[i];
             }
         }
         raw += info->res[DIM_X];
     }
+    return max;
 }
 
 #define FADE 4
 
+gnu_attribute(const)
 static unsigned char norm_Y(unsigned char x)
 {
     unsigned int y = x;
@@ -138,26 +149,27 @@ static unsigned char norm_Y(unsigned char x)
     return y;
 }
 
+gnu_attribute(nonnull)
 static void normalize_image(const float *raw, unsigned char img[],
                             const struct image_info *info)
 {
-    float max;
-    maximum_float(raw, info, &max);
+    float max = maximum_float(raw, info);
     raw += (info->res[DIM_Y] - 1) * info->res[DIM_X];
-    size_t j_off = 0;
     for (int j = 0; j < info->res[DIM_Y]; j++) {
         for (int i = 0; i < info->res[DIM_X]; i++) {
-            img[j_off + i] = norm_Y(255.0f - 255.0f * raw[i] / max);
+            img[i] = norm_Y(255.0f - 255.0f * raw[i] / max);
         }
         raw -= info->res[DIM_X];
-        j_off += info->res[DIM_X];
+        img += info->res[DIM_X];
     }
 }
 
+gnu_attribute(nonnull, malloc)
 static unsigned char *create_delaunay(const struct delaunay_triangle_pool *p,
                                       const struct image_info *info)
 {
-    float *raw = calloc(info->res[DIM_Y] * info->res[DIM_X], sizeof *raw);
+    size_t N_px = info->res[DIM_Y] * info->res[DIM_X];
+    float *raw = calloc(N_px, sizeof *raw);
     if (!raw) {
         return NULL;
     }
@@ -168,7 +180,7 @@ static unsigned char *create_delaunay(const struct delaunay_triangle_pool *p,
             draw_edge(raw, t->vertices[2], t->vertices[0], info);
         }
     }
-    unsigned char *img = calloc(info->res[DIM_X] * info->res[DIM_Y], sizeof *img);
+    unsigned char *img = calloc(N_px, sizeof *img);
     if (!img) {
         goto create_image_end;
     }
@@ -178,6 +190,7 @@ create_image_end:
     return img;
 }
 
+gnu_attribute(nonnull, malloc)
 static unsigned char *create_voronoi(const struct delaunay_triangle_pool *p,
                                      const struct image_info *info)
 {
@@ -204,6 +217,7 @@ create_image_end:
     return img;
 }
 
+gnu_attribute(nonnull)
 void write_triangulation(const struct delaunay_triangle_pool *p,
                          double xlow, double xhigh, double ylow, double yhigh,
                          int res_x, int res_y, const char *filename)
@@ -222,6 +236,7 @@ void write_triangulation(const struct delaunay_triangle_pool *p,
     free(img);
 }
 
+gnu_attribute(nonnull)
 void write_voronoi(const struct delaunay_triangle_pool *p,
                    double xlow, double xhigh, double ylow, double yhigh,
                    int res_x, int res_y, const char *filename)

@@ -86,6 +86,10 @@ static CRITICAL_SECTION crit;
 
 
 gnu_attribute(nonnull, malloc)
+/// Reserves @p N triangles on the stack allocator at @p p. This is the only 
+/// critical section in the entire algorithm, so all of the concurrency 
+/// primitives are clustered here
+///
 static struct delaunay_triangle *reserve_tris(struct delaunay_triangle_pool *p,
                                               size_t N)
 {
@@ -249,7 +253,8 @@ static struct delaunay_triangle *make_triangle(struct delaunay_triangle_pool *p,
 
 gnu_attribute(nonnull, hot)
 /// Moves the triangle pointer @p t to the triangle neighboring it at @p rot.
-/// @p rot is then updated to the neighboring triangle's orientation
+/// @p rot is then updated to the neighboring triangle's orientation, such 
+/// that successive calls to this would oscillate between the two triangles
 ///
 static void next_triangle(struct delaunay_triangle *restrict *restrict t, int *rot)
 {
@@ -305,6 +310,11 @@ static struct delaunay_triangle *minimum_node(struct delaunay_triangle *t,
 }
 
 gnu_attribute(nonnull)
+/// Determines if the (directed) triangles defined by @p L -> @p R and both of
+/// the neighbors of ( @p t, @p rot ) are both positively oriented. If this is 
+/// the case, then the entire convex hull that @p t is on is to the LEFT of 
+/// directed edge L->R
+///
 static int lower_tangent(const double *restrict L, const double *restrict R,
                          struct delaunay_triangle *t, int rot)
 {
@@ -318,7 +328,8 @@ static int lower_tangent(const double *restrict L, const double *restrict R,
 
 gnu_attribute(nonnull)
 /// Computes the lower common tangent of both convex hulls at @p tleft and 
-/// @p tright.
+/// @p tright. 
+/// TODO: Reimplement A&W's common tangent algorithm
 ///
 /// \param tleft
 ///     Reference to left triangle pointer. On entry, this must be a triangle 
@@ -361,8 +372,6 @@ gnu_attribute(nonnull, malloc)
 /// Connects the manifold triangles @p t1 and @p t2 at their vertices 
 /// specified by  @p o1 and @p o2, respectively. The new edge is a closed 
 /// segment that is spliced into the triangulations at @p t1 and @p t2. 
-/// The topological end result is a connection between manifolds @p t1 and
-/// @p t2
 ///
 static struct delaunay_triangle *
 make_edge(struct delaunay_triangle_pool *p,
@@ -391,6 +400,9 @@ make_edge(struct delaunay_triangle_pool *p,
 }
 
 gnu_attribute(nonnull, pure, hot)
+/// Checks if the passed edge triangle's candidate note intersects with the 
+/// next candidate around it
+///
 /// \param cand
 ///     Manifold triangle bordering the start tri
 /// \param direction
@@ -405,7 +417,7 @@ static int candidate_collision(struct delaunay_triangle *cand,
     // but we have to go again, because this node only defines the original
     // candidate node
     next_rotate(&cand, &rot, direction);
-    return TRI_VERTEX(cand, rot) && segment_d_sqrd(TRI_VERTEX(cand, rot), circum) < circum[2];
+    return TRI_VERTEX(cand, rot) && (segment_d_sqrd(TRI_VERTEX(cand, rot), circum) < circum[2]);
 }
 
 gnu_attribute(nonnull)
@@ -441,11 +453,11 @@ static void validate_manifold(struct delaunay_triangle *t)
 }
 
 gnu_attribute(nonnull)
-/// Finds a candidate that doesn't clash with the rest of the candidates in 
-/// the list. Goes @p direction around the list.
+/// Finds a candidate that doesn't clash with the next candidate in the list. 
+/// Goes @p direction around the list
 ///
 /// \param tedge
-///     This should be either tleft or tright; it must be a manifold triangle, 
+///     This should be either tleft or tright
 /// \param rot
 ///     The location of the candidate node on @p tedge
 /// \param direction

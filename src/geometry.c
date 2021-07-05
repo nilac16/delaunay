@@ -1,3 +1,13 @@
+/**
+ *  Different geometric primitives needed for triangulation. This probably 
+ *  doesn't need to be its own file, but the file that writes the triangulation
+ *  to an image on disk uses non-static functions exposed in the header, so I 
+ *  will not condense this into delaunay.c
+ * 
+ *  This uses x86 vector intrinsics by default. To disable this behavior, 
+ *  define NO_INTRINSICS. The simplest way to do so is probably just to compile
+ *  with -DNO_INTRINSICS
+ */
 #include <math.h>
 #include <stdio.h>
 #include <x86intrin.h>
@@ -8,6 +18,7 @@
 #else
 #define gnu_attribute(...)
 #endif //__GNUC__
+
 
 gnu_attribute(nonnull, pure)
 double dot_twovec(const double *restrict v1,
@@ -26,6 +37,11 @@ double dot_twovec(const double *restrict v1,
 }
 
 gnu_attribute(const)
+/// Crossing two 2D vectors can be likened to a dot product, where one vector 
+/// is transposed (shuffled) and its lower (upper bits!) are negated (the 
+/// blend with out_n). This returns a scalar, the magnitude of the normal 
+/// vector to the plane defined by @p v1 and @p v2
+///
 static double cross_twovec_xmm(const __m128d v1, const __m128d v2)
 {
     __m128d out = _mm_shuffle_pd(v2, v2, _MM_SHUFFLE2(0, 1));
