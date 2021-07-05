@@ -248,6 +248,8 @@ static struct delaunay_triangle *make_triangle(struct delaunay_triangle_pool *p,
     retarget_tri(ts + 2, MANIFOLD_CCW, ts + 3, MANIFOLD_CW);
     retarget_tri(ts + 3, MANIFOLD_CCW, ts + 1, MANIFOLD_CW);
 
+    triangle_circumcircle(v0, v1, v2, ts->circumcenter);
+
     return ts + 1;
 }
 

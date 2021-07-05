@@ -10,8 +10,11 @@
  */
 #include <math.h>
 #include <stdio.h>
-#include <x86intrin.h>
 #include "include/geometry.h"
+
+#ifndef NO_INTRINSICS
+#include <x86intrin.h>
+#endif //N_INTRINSICS
 
 #ifdef __GNUC__
 #define gnu_attribute(...) __attribute__((__VA_ARGS__))
@@ -36,6 +39,7 @@ double dot_twovec(const double *restrict v1,
     #endif //NO_INTRINSICS
 }
 
+#ifndef NO_INTRINSICS
 gnu_attribute(const)
 /// Crossing two 2D vectors can be likened to a dot product, where one vector 
 /// is transposed (shuffled) and its lower (upper bits!) are negated (the 
@@ -52,6 +56,7 @@ static double cross_twovec_xmm(const __m128d v1, const __m128d v2)
     _mm_store_sd(&ret, out);
     return ret;
 }
+#endif //NO_INTRINSICS
 
 gnu_attribute(nonnull, pure)
 double cross_twovec(const double *restrict v1,

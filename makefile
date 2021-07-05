@@ -17,7 +17,8 @@ else
 endif
 
 CC := gcc
-CFLAGS := -Wall -Werror -Wextra -Wpedantic -std=c17 -mavx2 -O0 -g3 -lm -Wno-sign-compare -lpthread
+CFLAGS := -Wall -Werror -Wextra -Wpedantic -std=c17 \
+		-O2 -lm -Wno-sign-compare -lpthread -mavx2
 
 INCDIR := $(SRCDIR)/include
 
