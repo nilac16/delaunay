@@ -1,8 +1,9 @@
 # Delaunay
 
-<img align="left" src="triangulation.jpg" width="356">
-<img align="right" src="voronoi.jpg" width="356">
-
+|                        |                  |
+|:---                    |              ---:|
+| ![](triangulation.jpg) | ![](voronoi.jpg) |
+|                        |                  |
 
 ## Description
 
