@@ -14,7 +14,7 @@
 
 #ifndef NO_INTRINSICS
 #include <x86intrin.h>
-#endif //N_INTRINSICS
+#endif //NO_INTRINSICS
 
 #ifdef __GNUC__
 #define gnu_attribute(...) __attribute__((__VA_ARGS__))

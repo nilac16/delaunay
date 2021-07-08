@@ -29,11 +29,12 @@
  *          o add slab allocator lists for new tris?
  *          o just use malloc()?
  *   - Add deletion algorithm (this would fragment the initial allocator)
+ *          o fragmentation invalidates iteration
 **/
 
 
 struct delaunay_triangle_pool {
-    struct delaunay_triangle *first;
+    struct delaunay_triangle *end;
     struct delaunay_triangle {
         const double *vertices[3];
         double circumcenter[3];
@@ -41,7 +42,7 @@ struct delaunay_triangle_pool {
             struct delaunay_triangle *next;
             int next_side;
         } adjacents[3];
-    } triangles[];
+    } start[];
 };
 
 

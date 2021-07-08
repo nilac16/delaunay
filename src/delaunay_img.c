@@ -173,7 +173,7 @@ static unsigned char *create_delaunay(const struct delaunay_triangle_pool *p,
     if (!raw) {
         return NULL;
     }
-    for (const struct delaunay_triangle *t = p->triangles; t < p->first; t++) {
+    for (const struct delaunay_triangle *t = p->start; t < p->end; t++) {
         draw_edge(raw, t->vertices[0], t->vertices[1], info);
         if (t->vertices[2]) {
             draw_edge(raw, t->vertices[1], t->vertices[2], info);
@@ -198,7 +198,7 @@ static unsigned char *create_voronoi(const struct delaunay_triangle_pool *p,
     if (!raw) {
         return NULL;
     }
-    for (const struct delaunay_triangle *t = p->triangles; t < p->first; t++) {
+    for (const struct delaunay_triangle *t = p->start; t < p->end; t++) {
         if (t->vertices[2]) {
             for (int i = 0; i < 3; i++) {
                 if (t->adjacents[i].next->vertices[2]) {

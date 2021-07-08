@@ -19,6 +19,9 @@
 #endif //__GNUC__
 
 
+
+
+
 #define DIM_TOGGLE(dim) (!dim)
 
 enum {
@@ -65,11 +68,11 @@ enum {
 gnu_attribute(malloc)
 static struct delaunay_triangle_pool *new_triangle_pool(size_t N)
 {
-    struct delaunay_triangle_pool *p = malloc(sizeof *p + (N * (sizeof *p->triangles)));
+    struct delaunay_triangle_pool *p = malloc(sizeof *p + (N * (sizeof *p->start)));
     if (!p) {
         return NULL;
     }
-    p->first = p->triangles;
+    p->end = p->start;
     return p;
 }
 
@@ -100,8 +103,8 @@ static struct delaunay_triangle *reserve_tris(struct delaunay_triangle_pool *p,
     EnterCriticalSection(&crit);
     #endif //__WIN32
 
-    struct delaunay_triangle *t = p->first;
-    p->first += N;
+    struct delaunay_triangle *t = p->end;
+    p->end += N;
 
     #ifndef __WIN32
     pthread_mutex_unlock(&mutex);
@@ -170,18 +173,16 @@ static int sort_ccw(const double *restrict v0,
 gnu_attribute(nonnull, cold)
 /// In the case of collinear points, it is not possible to make a real 
 /// triangle, so we must make two attached line segments instead
-/// TODO: See if @p vs can be an array of restricted pointers. I think it's
-///       UB with the possible swap. This function is not likely to be called
 ///
 static struct delaunay_triangle *double_segments(struct delaunay_triangle *ts,
                                                  const double *vs[static 3])
 {
-    puts("\tDEGENERATE TRIANGLE");
+    //puts(" DEGENERATE TRIANGLE");
     {
         int center = collinear_center(vs);
         if (center != 1) {
             const double *tmp = vs[center];
-            vs[1] = vs[center];
+            vs[center] = vs[1];
             vs[center] = tmp;
         }
     }

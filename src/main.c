@@ -5,7 +5,7 @@
 #include "include/geometry.h"
 #include "include/delaunay.h"
 
-#define N 3000
+#define N 1234
 #define RANDOMIZE_MIN -100.0
 #define RANDOMIZE_MAX 100.0
 
@@ -54,10 +54,15 @@ int main(int argc, char *argv[])
     for (size_t i = 0; i < N; i++) {
         randomize_node(nodes + 2 * i, RANDOMIZE_MIN, RANDOMIZE_MAX);
     }
+    /* double nodes[] = {
+        -20.0, -20.0,
+        20.0, -20.0,
+        0.0, -20.0
+    }; */
 
     struct timespec t0, t1;
     clock_gettime(CLOCK_MONOTONIC, &t0);
-    struct delaunay_triangle_pool *p = triangulate(N, nodes, 16);
+    struct delaunay_triangle_pool *p = triangulate(N, nodes, 8);
     clock_gettime(CLOCK_MONOTONIC, &t1);
     if (!p) {
         perror("Failed to allocate memory for triangulation");
