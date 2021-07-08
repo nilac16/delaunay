@@ -11,7 +11,7 @@ Natively parallel implementation of Dwyer's modification to the classic divide a
 
 The main file just generates some amount of nodes at random, then triangulates them and writes the triangulation and associated Voronoi diagram to the current directory (images are written using [STB's image library](https://github.com/nothings/stb)). All of the code in main.c and delaunay_img.c exists for this purpose, and is not necessary to the triangulation.
 
-Geometric primitives (in geometry.c) are written in both standard C and with x86 intrinsics. Intrinsics are enabled by default; build with `-DNO_INTRINSICS` to disable them.
+Geometric primitives (in geometry.c) are written in both standard C and with x86 intrinsics. Intrinsics are enabled by default; build with `-DNO_INTRINSICS` to disable them. All of the geometric functions necessary to the triangulation code have been moved into delaunay.c to make it standalone.
 
 ## Sources
 

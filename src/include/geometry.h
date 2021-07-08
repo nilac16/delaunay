@@ -3,15 +3,6 @@
 #ifndef DELAUNAY_GEOMETRY_H
 #define DELAUNAY_GEOMETRY_H
 
-/** TODO:
- *  Go through this file and remove forward decls for unused functions
- *  Make them static if they are used internally, otherwise, erase the 
- *  definitions as well
- * 
- *  ALSO:
- *  Watch for extreme UB from some of these restricted pointers, especially
- *  the function collinear_center()
-**/
 
 double dot_twovec(const double v1[static 2],
                   const double v2[static 2]);
