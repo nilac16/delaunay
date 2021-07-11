@@ -43,10 +43,8 @@ static double dot_twovec(const double *restrict v1,
 #ifndef NO_INTRINSICS
 
 gnu_attribute(const)
-/// Crossing two 2D vectors can be likened to a dot product, where one vector 
-/// is reversed (shuffled) and its lower (upper bits!) are negated (the 
-/// blend with out_n). This returns a scalar, the magnitude of the normal 
-/// vector to the plane defined by @p v1 and @p v2
+/// Reverses @p v2, negates the lower 64 bits, then returns the dot of @p v1 
+/// and @p v2
 ///
 static double cross_twovec_xmm(const __m128d v1, const __m128d v2)
 {
@@ -217,7 +215,6 @@ static int collinear_center(const double *restrict rs[static 3])
         return dot_twovec(AB, AC) < 0;
     }
 }
-
 
 
 #define DIM_TOGGLE(dim) (!dim)
@@ -734,6 +731,8 @@ merge_accept_left:
     goto merge_find_candidates;
 }
 
+#if USE_QSORT
+
 gnu_attribute(nonnull, pure, hot)
 static int xcmp(const void *restrict v1, const void *restrict v2)
 {
@@ -750,6 +749,73 @@ static int ycmp(const void *restrict v1, const void *restrict v2)
     return (y1 < y2) - (y1 > y2);
 }
 
+static int (*const cmps[])(const void *, const void *) = {
+    xcmp,
+    ycmp
+};
+
+#else
+
+gnu_attribute(nonnull)
+static void qswap(const double **p1, const double **p2)
+{
+    const double *tmp = *p1;
+    *p1 = *p2;
+    *p2 = tmp;
+}
+
+gnu_attribute(nonnull)
+static double qpivot(const double **base, const double **end, int dim)
+{
+    const double **mid = base + (end - base) / 2;
+    end--;
+    if ((*mid)[dim] < (*base)[dim]) {
+        qswap(base, mid);
+    }
+    if ((*end)[dim] < (*mid)[dim]) {
+        qswap(mid, end);
+        if ((*mid)[dim] < (*base)[dim]) {
+            qswap(base, mid);
+        }
+    }
+    return (*mid)[dim];
+}
+
+gnu_attribute(nonnull)
+static size_t qpart(const double **base, const double **j, int dim)
+{
+    double p = qpivot(base, j, dim);
+    const double **i = base - 1;
+    while (1) {
+        do {
+            i++;
+        } while ((*i)[dim] < p);
+        do {
+            j--;
+        } while ((*j)[dim] > p);
+        if (i >= j) {
+            return i - base;
+        }
+        qswap(i, j);
+    }
+}
+
+gnu_attribute(nonnull)
+static void kpart(size_t N, const double *refs[static N], size_t k, int dim)
+{
+    if (N == 1) {
+        return;
+    }
+    size_t part = qpart(refs, refs + N, dim);
+    if (k < part) {
+        kpart(part, refs, k, dim);
+    } else {
+        kpart(N - part, refs + part, k - part, dim);
+    }
+}
+
+#endif //USE_QSORT
+
 gnu_attribute(nonnull)
 /// Serial version
 ///
@@ -758,10 +824,6 @@ static struct delaunay_triangle *build_2dtree_s(struct delaunay_triangle_pool *p
                                                 const double *refs[static N],
                                                 int dim)
 {
-    static int (*const cmps[])(const void *, const void *) = {
-        xcmp,
-        ycmp
-    };
     if (N <= 3) {
         if (N == 3) {
             return make_triangle(p, refs[0], refs[1], refs[2]);
@@ -770,8 +832,14 @@ static struct delaunay_triangle *build_2dtree_s(struct delaunay_triangle_pool *p
         }
     }
     struct delaunay_triangle *restrict t_left, *restrict t_right;
-    qsort(refs, N, sizeof *refs, cmps[dim]);
     size_t med = N / 2;
+
+    #if USE_QSORT
+    qsort(refs, N, sizeof *refs, cmps[dim]);
+    #else
+    kpart(N, refs, med, dim);
+    #endif //USE_QSORT
+
     t_left = build_2dtree_s(p, med, refs, DIM_TOGGLE(dim));
     t_right = build_2dtree_s(p, (N + 1) / 2, refs + med, DIM_TOGGLE(dim));
     t_left = merge_triangulations(p, t_left, t_right, dim);
@@ -806,10 +874,6 @@ static struct delaunay_triangle *build_2dtree(struct delaunay_triangle_pool *p,
                                               const double *refs[static N],
                                               int dim, unsigned int n_threads)
 {
-    static int (*const cmps[])(const void *, const void *) = {
-        xcmp,
-        ycmp
-    };
     if (n_threads == 1) {
         return build_2dtree_s(p, N, refs, dim);
     }
@@ -821,8 +885,14 @@ static struct delaunay_triangle *build_2dtree(struct delaunay_triangle_pool *p,
         }
     }
     struct delaunay_triangle *restrict t_left, *restrict t_right;
-    qsort(refs, N, sizeof *refs, cmps[dim]);
     size_t med = N / 2;
+    
+    #if USE_QSORT
+    qsort(refs, N, sizeof *refs, cmps[dim]);
+    #else
+    kpart(N, refs, med, dim);
+    #endif //USE_QSORT
+    
 
     struct delaunay_args args;
     args.p = p;

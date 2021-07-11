@@ -18,7 +18,7 @@ endif
 
 CC := gcc
 CFLAGS := -Wall -Werror -Wextra -Wpedantic -std=c17 \
-		-O2 -lm -Wno-sign-compare -lpthread -mavx2
+		-O2 -lm -Wno-sign-compare -lpthread -mavx2 #-DUSE_QSORT
 
 INCDIR := $(SRCDIR)/include
 

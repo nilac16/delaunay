@@ -39,10 +39,8 @@ double dot_twovec(const double *restrict v1,
 
 #ifndef NO_INTRINSICS
 gnu_attribute(const)
-/// Crossing two 2D vectors can be likened to a dot product, where one vector 
-/// is reversed (shuffled) and its lower (upper bits!) are negated (the 
-/// blend with out_n). This returns a scalar, the magnitude of the normal 
-/// vector to the plane defined by @p v1 and @p v2
+/// Reverses @p v2, negates the lower 64 bits, then returns the dot of @p v1 
+/// and @p v2
 ///
 static double cross_twovec_xmm(const __m128d v1, const __m128d v2)
 {
