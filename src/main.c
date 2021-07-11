@@ -5,7 +5,7 @@
 #include "include/geometry.h"
 #include "include/delaunay.h"
 
-#define N 123456789
+#define N 1234
 #define RANDOMIZE_MIN -100.0
 #define RANDOMIZE_MAX 100.0
 
